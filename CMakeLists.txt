@@ -146,6 +146,8 @@ MESSAGE("Software Version: ${VERSION}")
 
 
    
+BpcInstallPackage( NAME g3log NAMESPACE VERSION ${VERSION} TARGETS g3logger USE_HEADER_SUBFOLDER )
+
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
    # ==========================================================================
@@ -159,10 +161,10 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin"
    #   usage:   make package
    #   Check the output result and install accordingly.
    # ==========================================================================
-   # INCLUDE (${g3log_SOURCE_DIR}/CPackLists.txt)
+   if( NOT BPC_COMPILER )
+      INCLUDE (${g3log_SOURCE_DIR}/CPackLists.txt)
+   endif()
 ENDIF()
-
-BpcInstallPackage( NAME g3log NAMESPACE VERSION ${VERSION} TARGETS g3logger USE_HEADER_SUBFOLDER )
 
 IF (NOT MSVC)
    MESSAGE("\n\n

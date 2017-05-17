@@ -47,9 +47,6 @@
 # ============================================================================
 
 cmake_minimum_required (VERSION 3.1)
-
-# ai-master sets its own version from here
-set( VERSION "1.3.0" )
 ENABLE_LANGUAGE(CXX)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT (MSVC_IDE OR XCODE))
@@ -166,7 +163,7 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin"
    #   usage:   make package
    #   Check the output result and install accordingly.
    # ==========================================================================
-   if( NOT BPC_COMPILER )
+   if( NOT BPC_PACKAGE_FOUND )
       INCLUDE (${g3log_SOURCE_DIR}/CPackLists.txt)
    endif()
 ENDIF()

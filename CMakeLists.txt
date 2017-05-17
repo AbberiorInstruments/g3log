@@ -47,7 +47,7 @@
 # ============================================================================
 
 cmake_minimum_required (VERSION 3.1)
-include( BpcPackage.cmake )
+
 # ai-master sets its own version from here
 set( VERSION "1.3.0" )
 ENABLE_LANGUAGE(CXX)
@@ -58,6 +58,12 @@ endif()
 
 
 project (g3log)
+
+# Switch on BpcPackage
+if( EXISTS "${CMAKE_CURRENT_LIST_DIR}/bpc-package/BpcPackage.cmake" )
+  include( "bpc-package/BpcPackage.cmake" )
+endif()
+set( VERSION "1.3.0.1" )
 
 message("Build type: ${CMAKE_BUILD_TYPE}")
 message("Configuration types: ${CMAKE_CONFIGURATION_TYPES}")

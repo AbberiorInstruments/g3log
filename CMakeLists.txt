@@ -63,7 +63,6 @@ project (g3log)
 if( EXISTS "${CMAKE_CURRENT_LIST_DIR}/bpc-package/BpcPackage.cmake" )
   include( "bpc-package/BpcPackage.cmake" )
 endif()
-set( VERSION "1.3.0.1" )
 
 message("Build type: ${CMAKE_BUILD_TYPE}")
 message("Configuration types: ${CMAKE_CONFIGURATION_TYPES}")

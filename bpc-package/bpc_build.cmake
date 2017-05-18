@@ -9,4 +9,5 @@ else()
 	endif()
 endif()
 
+message( "bpc_build BUILD_ARGS: ${BUILD_ARGS}" )
 bpc_build( ${BUILD_ARGS} )

@@ -59,7 +59,6 @@ project (g3log)
 # Switch on BpcPackage
 if( EXISTS "${CMAKE_CURRENT_LIST_DIR}/bpc-package/BpcPackage.cmake" )
   include( "bpc-package/BpcPackage.cmake" )
-  message( "Version: ${VERSION}" )
 endif()
 
 message("Build type: ${CMAKE_BUILD_TYPE}")
@@ -149,10 +148,9 @@ MESSAGE("Software Version: ${VERSION}")
 
 
    
-BpcInstallPackage( NAME g3log NAMESPACE VERSION ${VERSION} TARGETS g3logger USE_HEADER_SUBFOLDER )
-
-
-IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if( BPC_PACKAGE_FOUND )
+	BpcInstallPackage( NAME g3log NAMESPACE VERSION ${VERSION} TARGETS g3logger USE_HEADER_SUBFOLDER )
+elseif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
    # ==========================================================================
    # BETA : package manager for G3Log,. not yet reliable. Use at your own risk
    #        only tested on Ubuntu and CentOS
@@ -164,10 +162,9 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin"
    #   usage:   make package
    #   Check the output result and install accordingly.
    # ==========================================================================
-   if( NOT BPC_PACKAGE_FOUND )
-      INCLUDE (${g3log_SOURCE_DIR}/CPackLists.txt)
-   endif()
+   INCLUDE (${g3log_SOURCE_DIR}/CPackLists.txt)
 ENDIF()
+
 
 IF (NOT MSVC)
    MESSAGE("\n\n

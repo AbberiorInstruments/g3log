@@ -9,18 +9,18 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT CMAKE_INSTALL_PREFIX)
     set (CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}-install/" CACHE PATH "CMake install Directory" FORCE )
 endif()
 
-message( STATUS "Install Prefix: ${CMAKE_INSTALL_PREFIX}" )
-if( WIN32 )
-	set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo CACHE TYPE INTERNAL FORCE )
-else()
-	set(CMAKE_BUILD_TYPE Release CACHE TYPE INTERNAL FORCE )
-endif()
+# message( STATUS "Install Prefix: ${CMAKE_INSTALL_PREFIX}" )
+# if( WIN32 )
+#	set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo CACHE TYPE INTERNAL FORCE )
+# else()
+#	set(CMAKE_BUILD_TYPE Release CACHE TYPE INTERNAL FORCE )
+# endif()
 
 set( BPC_PACKAGE_FOUND True )
 
 function( BpcInstallPackage )
 	if( NOT CMAKE_CONFIGURATION_TYPES )
-		set( CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE} )
+		set( CMAKE_CONFIGURATION_TYPES "${CMAKE_BUILD_TYPE}" )
 	endif()
 	
 	cmake_parse_arguments( "PACKAGE"
@@ -110,13 +110,13 @@ function( BpcInstallPackage )
 			endforeach()
 		endif()
 		
-		install( TARGETS ${PACKAGE_TARGETS} EXPORT ${package}.${config} CONFIGURATIONS ${config} 
+		install( TARGETS ${PACKAGE_TARGETS} EXPORT "${package}.${config}" CONFIGURATIONS ${config} 
 			RUNTIME DESTINATION ${INST_DESTINATION}/bin/${config}
 			LIBRARY DESTINATION ${INST_DESTINATION}/bin/${config}
 			ARCHIVE DESTINATION ${INST_DESTINATION}/lib/${config}
 			PUBLIC_HEADER DESTINATION ${INC_DESTINATION}
 			INCLUDES DESTINATION ${INST_DESTINATION}/include
 		)
-		install(EXPORT ${package}.${config} ${ns} DESTINATION ${CONF_DESTINATION} CONFIGURATIONS ${config} FILE ${package}-config.cmake)
+		install(EXPORT "${package}.${config}" ${ns} DESTINATION ${CONF_DESTINATION} CONFIGURATIONS ${config} FILE ${package}-config.cmake)
 	endforeach()
 endfunction()

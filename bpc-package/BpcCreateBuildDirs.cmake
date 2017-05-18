@@ -39,11 +39,7 @@ function( bpc_build )
 	if( NOT BUILD_PLATFORMS )
 		if( CMAKE_HOST_UNIX )
 			# Default is gcc 4.7.4 at the moment
-			if( CMAKE_CL_64 )
-				set( BUILD_PLATFORMS "GNU-64-Linux-4.7.4" )
-			else()
-				set( BUILD_PLATFORMS "GNU-32-Linux-4.7.4" )
-			endif()
+			set( BUILD_PLATFORMS "GNU-32-Linux-4.7.4" )
 		elseif( WIN32 )
 			set( BUILD_PLATFORMS "MSVC-64-14.0;MSVC-32-14.0" )
 		else()
@@ -162,7 +158,7 @@ function( bpc_create_linux_build platform config do_build )
 			"${MY_GCC}"
 			"${MY_GXX}"
 			"${IPREFIX_ARG}"
-			"-DCMAKE_BUILD_TYPE=\"${config}\""
+			"-DCMAKE_BUILD_TYPE=${config}"
 	)
 	if( do_build )
 		message( "Executing make in ${BUILD_DIR}/${config}" )
@@ -187,7 +183,7 @@ function( bpc_create_windows_build platform )
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} "${BUILD_SOURCE_DIR}" "-B${BUILD_DIR}" 
 			"${GENERATOR}" 
-			"-DCMAKE_CONFIGURATION_TYPES=\"Debug;RelWithDebInfo\""
+			"-DCMAKE_CONFIGURATION_TYPES=Debug;RelWithDebInfo"
 			"${IPREFIX_ARG}"
 	)
 endfunction()

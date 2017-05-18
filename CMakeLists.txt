@@ -149,7 +149,7 @@ MESSAGE("Software Version: ${VERSION}")
 
    
 if( BPC_PACKAGE_FOUND )
-	BpcInstallPackage( NAME g3log NAMESPACE VERSION ${VERSION} TARGETS g3logger USE_HEADER_SUBFOLDER )
+	BpcInstallPackage( NAME G3Log NAMESPACE G3Log:: VERSION ${VERSION} TARGETS g3logger USE_HEADER_SUBFOLDER )
 elseif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
    # ==========================================================================
    # BETA : package manager for G3Log,. not yet reliable. Use at your own risk

@@ -1,9 +1,5 @@
-# Info for BpcPackage framework
-set( BPC_PACKAGE_NAME "g3log" )
-set( BPC_VERSION "1.3.0.1" )
-
 # Settings for original CMakeLists.txt as not change stuff
-set( VERSION ${BPC_VERSION} )
+set( VERSION "1.3.0.1" )
 
 set(USE_DYNAMIC_LOGGING_LEVELS ON CACHE BOOL "USE_DYNAMIC_LOGGING_LEVELS" FORCE)
 set(CHANGE_G3LOG_DEBUG_TO_DBUG ON CACHE BOOL "CHANGE_G3LOG_DEBUG_TO_DBUG" FORCE)

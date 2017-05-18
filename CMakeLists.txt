@@ -59,6 +59,7 @@ project (g3log)
 # Switch on BpcPackage
 if( EXISTS "${CMAKE_CURRENT_LIST_DIR}/bpc-package/BpcPackage.cmake" )
   include( "bpc-package/BpcPackage.cmake" )
+  message( "Version: ${VERSION}" )
 endif()
 
 message("Build type: ${CMAKE_BUILD_TYPE}")

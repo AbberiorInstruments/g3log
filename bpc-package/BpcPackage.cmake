@@ -1,22 +1,22 @@
 include( CMakePackageConfigHelpers )
 include( CMakeParseArguments )
-include( BpcSpecialDefaults.cmake )
+
+set( BPC_PACKAGE_FOUND True )
+	
 include( "${CMAKE_CURRENT_LIST_DIR}/BpcHelpers.cmake" )
 include( "${CMAKE_CURRENT_LIST_DIR}/BpcTargetPaths.cmake" )
 include( "${CMAKE_CURRENT_LIST_DIR}/BpcCompiler.cmake" )
 
+set( DEFAULTS_FILE "${CMAKE_SOURCE_DIR}/BpcPackageDefaults.cmake" )
+
+if( EXISTS "${DEFAULTS_FILE}" )
+	message( STATUS "Reading package defaults from: ${DEFAULTS_FILE}" )
+	include( "${DEFAULTS_FILE}" )
+endif()
+
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT CMAKE_INSTALL_PREFIX)
     set (CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}-install/" CACHE PATH "CMake install Directory" FORCE )
 endif()
-
-# message( STATUS "Install Prefix: ${CMAKE_INSTALL_PREFIX}" )
-# if( WIN32 )
-#	set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo CACHE TYPE INTERNAL FORCE )
-# else()
-#	set(CMAKE_BUILD_TYPE Release CACHE TYPE INTERNAL FORCE )
-# endif()
-
-set( BPC_PACKAGE_FOUND True )
 
 function( BpcInstallPackage )
 	if( NOT CMAKE_CONFIGURATION_TYPES )

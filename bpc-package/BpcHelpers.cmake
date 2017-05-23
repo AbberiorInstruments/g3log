@@ -47,3 +47,40 @@ function( bpc_list_subtract return left right )
 	endforeach()
 	set( ${return} ${difference} PARENT_SCOPE )
 endfunction()
+
+function( bpc_list_subtract_patterns return left patterns )
+	set( excludes )
+	foreach( item ${left} )
+		set( index -1 )
+		foreach( pat ${patterns} )
+			if( ${item} MATCHES ${pat} )
+				list( APPEND excludes ${item} )
+			endif()
+		endforeach()
+	endforeach()
+	
+	bpc_list_subtract( difference "${left}" "${excludes}" ) 
+	set( ${return} ${difference} PARENT_SCOPE )
+endfunction()
+
+function( bpc_get_include_dirs return target )
+	if( NOT TARGET ${target} )
+		set( ${return} "" PARENT_SCOPE )
+		return()
+	endif()
+	
+	# My own
+	get_target_property(incdirs ${target} INCLUDE_DIRECTORIES)
+	if ( NOT incdirs )
+		set( incdirs )
+	endif()
+		
+	# Transitive from dependencies:
+	get_property( bpc_incdirs TARGET ${target} PROPERTY BPC_INCLUDE_DIRECTORIES  )
+	bpc_list_unite( incdirs "${incdirs}" "${bpc_incdirs}" )
+	
+	set( ${return} ${incdirs} PARENT_SCOPE )
+endfunction()
+
+message( STATUS "Removing excluded libraries ${LIB_EXCLUDES}" )
+bpc_list_subtract( LIBRARIES "${LIBRARIES}" "${LIB_EXCLUDES}" )

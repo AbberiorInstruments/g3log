@@ -2,13 +2,6 @@ set( MSBUILD_CMD "C:\\Program Files (x86)\\MSBuild\\14.0\\Bin\\MSBuild.exe" )
 
 function( bpc_build )
 	
-	set( DEFAULTS_FILE "${CMAKE_SOURCE_DIR}/BpcPackageDefaults.cmake" )
-
-	if( EXISTS "${DEFAULTS_FILE}" )
-		message( STATUS "Reading package defaults from: ${DEFAULTS_FILE}" )
-		include( "${DEFAULTS_FILE}" )
-	endif()
-	
 	# Platforms that can be built on windows
 	set( KNOWN_PLATFORMS_WINDOWS
 		"MSVC-64-14.0"
@@ -31,8 +24,19 @@ function( bpc_build )
 	
 	if( NOT BUILD_SOURCE_DIR )
 		get_filename_component( BUILD_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY )
+	else()
+		file( TO_CMAKE_PATH ${BUILD_SOURCE_DIR} BUILD_SOURCE_DIR)
 	endif()
 
+	set( DEFAULTS_FILE "${BUILD_SOURCE_DIR}/BpcPackageDefaults.cmake" )
+
+	if( EXISTS "${DEFAULTS_FILE}" )
+		message( STATUS "Reading package defaults from: ${DEFAULTS_FILE}" )
+		include( "${DEFAULTS_FILE}" )
+	else()
+		message( STATUS "No package defaults file found at: ${DEFAULTS_FILE}" )
+	endif()
+	
 	if( NOT BUILD_INSTALL_PREFIX )
 		if( BPC_INSTALL_PREFIX )
 			set( BUILD_INSTALL_PREFIX ${BPC_INSTALL_PREFIX} )
@@ -43,6 +47,8 @@ function( bpc_build )
 				set( BUILD_INSTALL_PREFIX "${BUILD_SOURCE_DIR}-install" )
 			endif()
 		endif()
+	else()
+		file( TO_CMAKE_PATH ${BUILD_INSTALL_PREFIX} BUILD_INSTALL_PREFIX)
 	endif()
 	
 	if( NOT BUILD_BUILD_PREFIX)
@@ -53,10 +59,12 @@ function( bpc_build )
 			set( BUILD_BUILD_PREFIX "${BUILD_SOURCE_DIR}-build" )
 		endif()
 	else()
-		if( ${BUILD_BUILD_PREFIX} MATCHES "^${BUILD_SOURCE_DIR}/.*" )
+		file( TO_CMAKE_PATH ${BUILD_BUILD_PREFIX} BUILD_BUILD_PREFIX)
+		
+		if( ${BUILD_BUILD_PREFIX} MATCHES "^${BUILD_SOURCE_DIR}(/|$).*" )
 			message( STATUS "Build Root: ${BUILD_BUILD_PREFIX}" )
 			message( STATUS "Source Dir: ${BUILD_SOURCE_DIR}" )
-			message( FATAL_ERROR "Will not build inside source tree! Please call the script from the intended build root." )
+			message( FATAL_ERROR "Will not build inside source tree. build.sh or build.bat should be called from the intended BUILD_PREFIX directory!" )
 		endif()
 	endif()
 		
@@ -75,8 +83,12 @@ function( bpc_build )
 				endif()
 			endforeach()
 		else()
-			set( BUILD_PLATFORMS ${KOWN_PLATFORMS} )
+			set( BUILD_PLATFORMS ${KNOWN_PLATFORMS} )
 		endif()
+	endif()
+	
+	if( NOT BUILD_PLATFORMS )
+		message( FATAL_ERROR "No valid platforms to build package for!" )
 	endif()
 	
 	message( STATUS "Building from sources at ${BUILD_SOURCE_DIR}" )

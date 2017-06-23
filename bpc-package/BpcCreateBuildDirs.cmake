@@ -227,18 +227,21 @@ endfunction()
 function( bpc_create_nisom_build platform config )
 
 	if( platform STREQUAL "NISOM" )
-		foreach( dir "${BUILD_SOURCE_DIR}/../../CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/bpc-package" )
-			if( EXISTS "${dir}/CMakeToolchainNISOM.cmake" )
-				set( TOOLCHAIN_FILE "${dir}/CMakeToolchainNISOM.cmake" )
-				break()
-			endif()
-		endforeach()
-	elseif( platform STREQUAL "nisom-cxx11" )
-	
+		set( name CMakeToolchainNISOM-gcc_4_7 )
+	else()
+		set( name CMakeToolchainNISOM-cxx11 )
 	endif()
+	
+	foreach( dir "${BUILD_SOURCE_DIR}/../../CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/bpc-package" )
+		if( EXISTS "${dir}/${name}.cmake" )
+			set( TOOLCHAIN_FILE "${dir}/${name}.cmake" )
+			break()
+		endif()
+	endforeach()
+	
 
 	if( NOT TOOLCHAIN_FILE )
-		message( FATAL_ERROR "Could not find CMakeToolchainNISOM.cmake!" )
+		message( FATAL_ERROR "Could not find ${name}.cmake!" )
 	endif()
 	 
 	message( STATUS "Executing cmake. Build dir: ${BUILD_DIR}" )

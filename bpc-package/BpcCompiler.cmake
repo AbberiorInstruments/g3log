@@ -1,33 +1,42 @@
-if ( CMAKE_TOOLCHAIN_FILE )
-	# We do this by hand at the moment and just call it nisom - may change
-	get_filename_component( toolchain_file ${CMAKE_TOOLCHAIN_FILE} NAME )
-	if ( ${toolchain_file} STREQUAL "CMakeToolchainNISOM.cmake" )
-		set( BPC_TARGET_NISOM ON )
-		
-		# Check if we are using the expected generator
-		if( ${CMAKE_GENERATOR} STREQUAL "MinGW Makefiles" )
-			message( "Using MinGW to target NI-SOM platform" )
-		elseif( ${CMAKE_GENERATOR} STREQUAL "NMake Makefiles" )
-			message( "Using nmake to target NI-SOM platform" )
-		elseif( ${CMAKE_GENERATOR} STREQUAL "NMake Makefiles JOM" )
-			message( "Using JOM to target NI-SOM platform" )
-		else()
-			message( "Warning: Invalid generator for NI-SOM platform. Use 'Nmake Makefiles JOM'!" )
-		endif()
-		
-		set( BPC_COMPILER nisom )
-			
-		# Compiler flags for the NI-SOM platform
-		set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3 -mfloat-abi=softfp -Wall -Wno-psabi" )
-		set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3 -mfloat-abi=softfp -Wall -Wno-psabi -std=c++11" )
-		set( CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3 -mfloat-abi=softfp -Wall -Wno-psabi" )
-		set( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3 -mfloat-abi=softfp -Wall -Wno-psabi -std=c++11" )
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-		add_definitions(-DTARGET_NISOM)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l" )
+	set( BPC_TARGET_NISOM ON )
 		
-		# Needed for the NISOM platform for some reason. 
-		set( THREADS_PTHREAD_ARG "-pthread" )
+	# Check if we are using the expected generator
+	if(CMAKE_GENERATOR MATCHES "Makefiles" OR CMAKE_GENERATOR MATCHES "Ninja")
+		message( "Using ${CMAKE_GENERATOR} to target NI-SOM platform" )
+	else()
+		message( "Warning: Invalid generator for NI-SOM platform." )
 	endif()
+		
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.1)
+		set( BPC_COMPILER nisom )
+	else()
+		set( BPC_COMPILER nisom-cxx11 )
+	endif()
+
+	set( BPC_NISOM_FLAGS " -Wall -Wno-psabi" )
+
+	set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)	
+	set(CMAKE_INSTALL_RPATH "$ORIGIN")
+		
+	string( APPEND CMAKE_C_FLAGS "${BPC_NISOM_FLAGS}" )
+	string( APPEND CMAKE_CXX_FLAGS "${BPC_NISOM_FLAGS}" )
+		
+	add_definitions(-DTARGET_NISOM)
+		
+	# Needed for the NISOM platform for some reason. 
+	set( THREADS_PTHREAD_ARG "-pthread" )
+	set( BPC_ARCHITECTURE "NISOM" )
+		
+	# Exclude from packaging as they are always on the sytem and just added to LIBRARIES for cross-compiling
+	# Exclude all libraries that are part of the 
+	set( BPC_NISOM_INSTALL_EXCLUDE_PATTERNS
+		".*Zlib.*"
+		".*LibTIFF.*"
+	)
 elseif( UNIX )
 	set( BPC_COMPILER ${CMAKE_CXX_COMPILER_ID} )
 	if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
@@ -39,13 +48,13 @@ elseif( UNIX )
 	string( APPEND BPC_COMPILER -${system_name} )
 	string( APPEND BPC_COMPILER -${CMAKE_CXX_COMPILER_VERSION} )
 
-	if( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5 )
-		string( APPEND CMAKE_CXX_FLAGS " -std=c++11" )
-	else()
-		string( APPEND CMAKE_CXX_FLAGS " -std=c++14" )
-	endif()
-
 	set( CMAKE_POSITION_INDEPENDENT_CODE TRUE )
+	
+	if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+		set( BPC_ARCHITECTURE "GNU-Linux-32" )
+	elseif( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+		set( BPC_ARCHITECTURE "GNU-Linux-64" )
+	endif()
 elseif( WIN32 )
 	if( BPC_AI_BRANDING )
 		add_definitions( -D_AI_BRANDING )

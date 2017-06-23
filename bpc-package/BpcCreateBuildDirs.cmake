@@ -1,4 +1,22 @@
+cmake_minimum_required( VERSION 3.7.1 )
+
 set( MSBUILD_CMD "C:\\Program Files (x86)\\MSBuild\\14.0\\Bin\\MSBuild.exe" )
+FIND_PACKAGE(Subversion QUIET)
+
+# For now: Read this separately from BpcDefaults.cmake which is not (yet) included here
+# this will i.e. set the default build generators etc.
+if( NOT BPC_USER_DEFAULTS )
+	if( WIN32 )
+		file( TO_CMAKE_PATH "$ENV{USERPROFILE}/BpcUserDefaults.cmake" BPC_USER_DEFAULTS )
+	else()
+		file( TO_CMAKE_PATH "$ENV{HOME}/BpcUserDefaults.cmake" BPC_USER_DEFAULTS )
+	endif()
+	if( EXISTS "${BPC_USER_DEFAULTS}" )
+		message( STATUS "BPC user defaults from ${BPC_USER_DEFAULTS}" )
+		include( "${BPC_USER_DEFAULTS}" )
+	endif()
+endif()
+
 
 function( bpc_build )
 	
@@ -7,6 +25,7 @@ function( bpc_build )
 		"MSVC-64-14.0"
 		"MSVC-32-14.0"
 		"NISOM"
+		"nisom-cxx11"
 	)
 	
 	set( KNOWN_PLATFORMS_LINUX
@@ -27,6 +46,7 @@ function( bpc_build )
 	else()
 		file( TO_CMAKE_PATH ${BUILD_SOURCE_DIR} BUILD_SOURCE_DIR)
 	endif()
+	get_filename_component( BUILD_SOURCE_DIR ${BUILD_SOURCE_DIR} ABSOLUTE )
 
 	set( DEFAULTS_FILE "${BUILD_SOURCE_DIR}/BpcPackageDefaults.cmake" )
 
@@ -44,7 +64,8 @@ function( bpc_build )
 			if( CMAKE_HOST_UNIX )
 				set( BUILD_INSTALL_PREFIX "$ENV{HOME}/Libraries" )
 			else()
-				set( BUILD_INSTALL_PREFIX "${BUILD_SOURCE_DIR}-install" )
+				get_filename_component( WORKINGCOPY_DIR ${CMAKE_CURRENT_LIST_DIR} DIRECTORY )
+				set( BUILD_INSTALL_PREFIX "${WORKINGCOPY_DIR}-install" )
 			endif()
 		endif()
 	else()
@@ -102,7 +123,7 @@ function( bpc_build )
 	endif()
 	
 	foreach( BUILD_PLATFORM ${BUILD_PLATFORMS} )
-		if( "${BUILD_PLATFORM}" STREQUAL "NISOM" )
+		if( "${BUILD_PLATFORM}" STREQUAL "NISOM" OR "${BUILD_PLATFORM}" STREQUAL "nisom-cxx11" )
 			set( BPC_TARGET_NISOM True )
 		else()
 			if( CMAKE_HOST_UNIX )
@@ -118,7 +139,7 @@ function( bpc_build )
 		message( STATUS "Building into:  ${BUILD_DIR}" )
 		
 		set( INSTALL_DIR "${BUILD_INSTALL_PREFIX}/${BPC_COMPILER}" )
-		message( STATUS "Building into: ${INSTALL_DIR}" )
+		message( STATUS "Installing into: ${INSTALL_DIR}" )
 		set( IPREFIX_ARG "-DCMAKE_INSTALL_PREFIX=${BUILD_INSTALL_PREFIX}" )	
 		
 		if( NOT BUILD_KEEP_CACHE )
@@ -144,12 +165,12 @@ function( bpc_build )
 		
 			foreach( config ${BUILD_CONFIGURATIONS} )
 				if( BUILD_RUN_CMAKE )
-					bpc_create_nisom_build( ${config} )
+					bpc_create_nisom_build( ${BUILD_PLATFORM} ${config} )
 				endif()
 			
 				if( NOT BUILD_NOBUILD )
 					file( APPEND ${batfile} "cd /D \"${nbuild_dir}\\${config}\"\n" )
-					file( APPEND ${batfile} "jom ${target}\n" )
+					file( APPEND ${batfile} "\"${CMAKE_COMMAND}\" --build . --target ${target}\n" )
 				endif()
 			endforeach()
 			
@@ -195,29 +216,41 @@ function( bpc_build )
 	endforeach()
 	
 	if( NOT CMAKE_HOST_UNIX AND NOT BUILD_NOBUILD )
-		message( STATUS "Executing build script: ${batfile}" )
+		file( TO_NATIVE_PATH ${batfile} batfile_native )
+		message( STATUS "Executing build script: ${batfile_native}" )
 		execute_process(
-			COMMAND "cmd.exe" "/c" "start" "cmd" "/k" "${batfile}"
+			COMMAND "cmd.exe" "/c" "start" "cmd" "/k" "${batfile_native}"
 		)
 	endif()
 endfunction()
 
-function( bpc_create_nisom_build config )
-	foreach( dir "${BUILD_SOURCE_DIR}/CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/bpc-package" )
-		if( EXISTS "${dir}/CMakeToolchainNISOM.cmake" )
-			set( TOOLCHAIN_FILE "${dir}/CMakeToolchainNISOM.cmake" )
-			break()
-		endif()
-	endforeach()
+function( bpc_create_nisom_build platform config )
+
+	if( platform STREQUAL "NISOM" )
+		foreach( dir "${BUILD_SOURCE_DIR}/../../CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/CMakeModules/toolchains" "${BUILD_SOURCE_DIR}/bpc-package" )
+			if( EXISTS "${dir}/CMakeToolchainNISOM.cmake" )
+				set( TOOLCHAIN_FILE "${dir}/CMakeToolchainNISOM.cmake" )
+				break()
+			endif()
+		endforeach()
+	elseif( platform STREQUAL "nisom-cxx11" )
+	
+	endif()
 
 	if( NOT TOOLCHAIN_FILE )
 		message( FATAL_ERROR "Could not find CMakeToolchainNISOM.cmake!" )
 	endif()
 	 
 	message( STATUS "Executing cmake. Build dir: ${BUILD_DIR}" )
+	if(BPC_NISOM_USE_NINJA)
+		set(NISOM_CMAKE_GENERATOR "Ninja")
+	else()
+		set(NISOM_CMAKE_GENERATOR "NMake Makefiles JOM")
+	endif()
+
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} "${BUILD_SOURCE_DIR}" "-B${BUILD_DIR}/${config}"
-			"-GNMake Makefiles JOM" 
+			"-G${NISOM_CMAKE_GENERATOR}" 
 			"-DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE}" 
 			"-DCMAKE_BUILD_TYPE=${config}"
 			"${IPREFIX_ARG}"
@@ -265,3 +298,65 @@ function( bpc_create_windows_build platform )
 	)
 endfunction()
 
+function( bpc_checkout )
+	if( CMAKE_HOST_UNIX )
+		message( "Cmake is running on linux!" )
+		set( IS_LINUX_HOSTED True )
+	endif()
+	
+	if( ARGN )
+		cmake_parse_arguments( "CHECKOUT" "" "PROJECT" "" ${ARGN} )
+	endif()
+	
+	if( NOT CHECKOUT_PROJECT )
+		message( FATAL_ERROR "No project name given." )
+	endif()
+
+	IF(NOT Subversion_SVN_EXECUTABLE)
+		message( FATAL_ERROR "Subversion not found!" )
+	endif()
+	
+	execute_process(
+		COMMAND 
+			${Subversion_SVN_EXECUTABLE} update Projects --set-depth empty 
+	)		
+	execute_process(
+		COMMAND 
+			${Subversion_SVN_EXECUTABLE} update Projects/${CHECKOUT_PROJECT} --set-depth infinity 
+	)
+	include( "Projects/${CHECKOUT_PROJECT}/BpcProjectDirectories.cmake" )
+	
+	if( NOT BPC_PROJECT_DIRECTORIES )
+		message( FATAL_ERROR "BpcProjectDirectories.cmake not found in Projects/${CHECKOUT_PROJECT}" )
+	endif()
+	
+	set( checked_out_empty )
+	set( checked_out )
+	
+	foreach( dir ${BPC_PROJECT_DIRECTORIES} )
+		set( paths )
+		get_filename_component( token ${dir} DIRECTORY )
+		while( token )
+			list( INSERT paths 0 ${token} )
+			get_filename_component( token ${token} DIRECTORY )
+		endwhile()
+		
+		foreach( path ${paths} )
+			if( (NOT "${path}" IN_LIST checked_out) AND (NOT "${path}" IN_LIST checked_out_empty) )
+				execute_process(
+					COMMAND 
+						${Subversion_SVN_EXECUTABLE} update ${path} --set-depth empty
+				)				
+				list( APPEND checked_out_empty ${path} )
+			endif()
+		endforeach()
+		if( NOT "${path}" IN_LIST checked_out )
+			execute_process(
+				COMMAND 
+					${Subversion_SVN_EXECUTABLE} update ${dir} --set-depth infinity
+			)
+			list( APPEND checked_out ${path} )
+		endif()
+			
+	endforeach()
+endfunction()

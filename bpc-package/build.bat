@@ -4,8 +4,8 @@ setlocal ENABLEDELAYEDEXPANSION
 set _argcActual=0
 for %%i in (%*) do set /A _argcActual+=1
 
-if %_argcActual% GTR 1 (
-	echo "Usage: %0 [source dir]"
+if %_argcActual% GTR 2 (
+	echo "Usage: %0 [source dir] [platforms]"
 	goto :EOF
 )
 
@@ -14,6 +14,11 @@ set workd=%cd%
 
 rem echo mydir: %mydir%
 rem echo workd: %workd%
+
+if %_argcActual% EQU 2 (
+	echo ** Building CMakeLists.txt at %1 in %workd%
+	cmake.exe -DBUILD_ARGS:STRING="BUILD_PREFIX;%workd%;SOURCE_DIR;%1;PLATFORMS;%2" -P %mydir%/bpc_build.cmake
+)
 	
 if %_argcActual% EQU 1 (
 	echo ** Building CMakeLists.txt at %1 in %workd%

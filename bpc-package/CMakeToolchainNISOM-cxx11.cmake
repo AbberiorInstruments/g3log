@@ -1,0 +1,46 @@
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR armv7l)
+
+set(NISOM_WINDOWS_HINTS
+	"c:/toolchains/nisom-gcc7_1"
+	"c:/toolchains/nisom-gcc_7_1"
+)
+
+find_program(CMAKE_C_COMPILER
+	arm-nilrt-linux-gnueabi-gcc
+	HINTS
+		${NISOM_WINDOWS_HINTS}
+		ENV NISOM_TOOLCHAIN
+	PATH_SUFFIXES bin
+)
+
+find_program(CMAKE_CXX_COMPILER
+	arm-nilrt-linux-gnueabi-g++
+	HINTS
+		${NISOM_WINDOWS_HINTS}
+		ENV NISOM_TOOLCHAIN
+	PATH_SUFFIXES bin
+)
+
+if(NOT CMAKE_C_COMPILER OR NOT CMAKE_CXX_COMPILER)
+	message(FATAL_ERROR "Failed locating NISOM toolchain")
+endif()
+
+set(COMMON_LINKER_FLAGS
+	"-Wl,--allow-shlib-undefined,--no-copy-dt-needed-entries,--as-needed"
+)
+
+set(CMAKE_EXE_LINKER_FLAGS "${COMMON_LINKER_FLAGS}" CACHE STRING "")
+
+set(CMAKE_MODULE_LINKER_FLAGS
+	"-Wl,--no-undefined ${COMMON_LINKER_FLAGS}" CACHE STRING ""
+)
+
+set(CMAKE_SHARED_LINKER_FLAGS
+	"-Wl,--no-undefined ${COMMON_LINKER_FLAGS}" CACHE STRING ""
+)
+
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)

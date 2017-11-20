@@ -7,6 +7,11 @@ include( "${CMAKE_CURRENT_LIST_DIR}/BpcHelpers.cmake" )
 include( "${CMAKE_CURRENT_LIST_DIR}/BpcTargetPaths.cmake" )
 include( "${CMAKE_CURRENT_LIST_DIR}/BpcCompiler.cmake" )
 
+if( BPC_ABI_VERSION )
+	string( APPEND BPC_COMPILER -Abi-${BPC_ABI_VERSION} )
+	string( APPEND CMAKE_CXX_FLAGS " -fabi-version=${BPC_ABI_VERSION}" )
+endif()
+
 set( DEFAULTS_FILE "${CMAKE_SOURCE_DIR}/BpcPackageDefaults.cmake" )
 
 if( EXISTS "${DEFAULTS_FILE}" )

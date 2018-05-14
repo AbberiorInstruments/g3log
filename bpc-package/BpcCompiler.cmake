@@ -1,5 +1,20 @@
-set(CMAKE_CXX_STANDARD 14)
+if(NOT CMAKE_CXX_STANDARD)
+	set(CMAKE_CXX_STANDARD 17)
+endif()
+
+if(NOT DEFINED BPC_STRICT_CXX_OPTIONS AND
+	MSVC AND
+	CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 19.12)
+
+    set(BPC_STRICT_CXX_OPTIONS "/permissive-")
+endif()
+
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	string( APPEND CMAKE_C_FLAGS " -Wall" )
+	string( APPEND CMAKE_CXX_FLAGS " -Wall" )
+endif()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l" )
 	set( BPC_TARGET_NISOM ON )
@@ -17,18 +32,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "armv
 		set( BPC_COMPILER nisom-cxx11 )
 	endif()
 
-	set( BPC_NISOM_FLAGS " -Wall -Wno-psabi" )
+	set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
-	set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)	
-	set(CMAKE_INSTALL_RPATH "$ORIGIN")
-		
-	string( APPEND CMAKE_C_FLAGS "${BPC_NISOM_FLAGS}" )
-	string( APPEND CMAKE_CXX_FLAGS "${BPC_NISOM_FLAGS}" )
+	set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib" "$ORIGIN")
 		
 	add_definitions(-DTARGET_NISOM)
 		
-	# Needed for the NISOM platform for some reason. 
-	set( THREADS_PTHREAD_ARG "-pthread" )
 	set( BPC_ARCHITECTURE "NISOM" )
 		
 	# Exclude from packaging as they are always on the sytem and just added to LIBRARIES for cross-compiling
@@ -60,14 +69,9 @@ elseif( WIN32 )
 		add_definitions( -D_AI_BRANDING )
 	endif()
 
-	if( MINGW )
-		set( BPC_COMPILER GCC-4.7 )
-
-		string( APPEND CMAKE_C_FLAGS " -DWIN32_LEAN_AND_MEAN" )
-		string( APPEND CMAKE_CXX_FLAGS " -DWIN32_LEAN_AND_MEAN" )
-		string( APPEND CMAKE_C_FLAGS_DEBUG " -D_DEBUG" )
-		string( APPEND CMAKE_CXX_FLAGS_DEBUG " -D_DEBUG" )
-	elseif( MSVC )
+	if( MSVC )
+		# Disable "dll interface" warning 
+		string( APPEND CMAKE_CXX_FLAGS " /wd4251 /wd4275" )
 		if( MSVC90 )
 			if( NOT CMAKE_CL_64 )
 				set( BPC_COMPILER MSVC-9.0/win32 )
@@ -126,11 +130,34 @@ elseif( WIN32 )
 			else()
 				string( APPEND BPC_COMPILER -14.1 )
 			endif()
+			
+			# This warning appears in boost/asio. Not clear whether it is a false positive (some issues
+			# where reported with MSVC not getting this right) or with boost. Stays until the warning 
+			# disappears or it is clear that it is not a compiler bug and boost if fixed or included
+			# through some mechanism that will disable the warning for the buggy header in question
+			if (CMAKE_CXX_COMPILER_VERSION EQUAL 19.13 )
+				string( APPEND CMAKE_CXX_FLAGS " /wd4834" )
+			endif()
+			
 			set( BPC_MFC_LIBRARY mfc140 )
 
 			string( APPEND CMAKE_C_FLAGS " /D_WIN32_WINNT=0x0600" )
 			string( APPEND CMAKE_CXX_FLAGS " /D_WIN32_WINNT=0x0600" )
 			string( APPEND CMAKE_CXX_FLAGS " /wd4091" ) # typedef enum
+			
+			if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 19.12)
+				add_definitions( -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS )
+			endif()
+
+			if( NOT MSVC_IDE )
+				# msbuild will set this in the culture section of the tc compiler potentially 
+				# breaking rc when also setting it in the additional options
+				string( FIND ${CMAKE_RC_FLAGS} "nologo" nl )
+				if( nl EQUAL -1 )
+					string( APPEND CMAKE_RC_FLAGS " /nologo" )
+				endif()
+			endif()
+			#string( APPEND CMAKE_RC_FLAGS " /nologo" ) # typedef enum
 		endif()
 		string( APPEND CMAKE_C_FLAGS " /DNOMINMAX" )
 		string( APPEND CMAKE_CXX_FLAGS " /DNOMINMAX" )
@@ -155,6 +182,12 @@ elseif( WIN32 )
 			endif()
 		endif()
 
+		# Switch on edit and continue for Visual Studio 2017 64bit builds
+		if( MSVC_IDE AND CMAKE_CL_64 AND (MSVC_VERSION GREATER_EQUAL 1910) )
+			string( APPEND CMAKE_C_FLAGS_DEBUG " /ZI" )
+			string( APPEND CMAKE_CXX_FLAGS_DEBUG " /ZI" )
+		endif()
+		
 		set( BUILD_SHARED_LIBS TRUE )
 
 		if( MSVC_IDE AND NOT BPC_KEEP_ZERO_CHECK )

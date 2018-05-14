@@ -7,11 +7,6 @@ include( "${CMAKE_CURRENT_LIST_DIR}/BpcHelpers.cmake" )
 include( "${CMAKE_CURRENT_LIST_DIR}/BpcTargetPaths.cmake" )
 include( "${CMAKE_CURRENT_LIST_DIR}/BpcCompiler.cmake" )
 
-if( BPC_ABI_VERSION )
-	string( APPEND BPC_COMPILER -Abi-${BPC_ABI_VERSION} )
-	string( APPEND CMAKE_CXX_FLAGS " -fabi-version=${BPC_ABI_VERSION}" )
-endif()
-
 set( DEFAULTS_FILE "${CMAKE_SOURCE_DIR}/BpcPackageDefaults.cmake" )
 
 if( EXISTS "${DEFAULTS_FILE}" )
@@ -21,6 +16,10 @@ endif()
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT CMAKE_INSTALL_PREFIX)
     set (CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}-install/" CACHE PATH "CMake install Directory" FORCE )
+endif()
+
+if( BPC_LIBRARIES )
+	message( STATUS "Using BPC_LIBRARIES from: ${BPC_LIBRARIES}" )
 endif()
 
 function( BpcInstallPackage )
@@ -88,6 +87,18 @@ function( BpcInstallPackage )
 	else()
 		set( INC_DESTINATION ${INST_DESTINATION}/include )
 	endif()
+			
+	foreach( target ${PACKAGE_TARGETS} )
+		get_target_property( type ${target} TYPE )
+		if( type STREQUAL STATIC_LIBRARY )
+			get_target_property( oname ${target} OUTPUT_NAME )
+			if( oname )
+				set_target_properties( ${target} PROPERTIES COMPILE_PDB_NAME ${oname} )
+			else()
+				set_target_properties( ${target} PROPERTIES COMPILE_PDB_NAME ${target} )
+			endif()
+		endif()
+	endforeach()
 	
 	foreach( config ${CMAKE_CONFIGURATION_TYPES} )
 		string( TOUPPER ${config} CONFIG )
@@ -104,13 +115,23 @@ function( BpcInstallPackage )
 			
 				# message( "TARGET: ${target} is RTT?: ${IS_RUNTIME_TARGET}" )
 				
-				if ( IS_RUNTIME_TARGET AND MSVC )
-					bpc_get_symbol_dir( ${target}  ${config} sydir )
+				if ( ((type STREQUAL STATIC_LIBRARY) OR IS_RUNTIME_TARGET) AND MSVC )
 					bpc_get_symbol_name( ${target} ${config} syname )
 
+					if( type STREQUAL STATIC_LIBRARY )
+						set( subdir "lib" )
+						set( sydir "${CMAKE_CURRENT_BINARY_DIR}/${config}" )
+					else()
+						set( subdir "bin" )
+						bpc_get_symbol_dir( ${target} ${config} sydir )
+					endif()
+					
+					# message( STATUS "${target}: Installing pdb file ${sydir}/${syname} to ${INST_DESTINATION}/${subdir}/${config}" )
 					install( PROGRAMS "${sydir}/${syname}"
-						DESTINATION "${INST_DESTINATION}/bin/${config}"
+						DESTINATION "${INST_DESTINATION}/${subdir}/${config}"
 						CONFIGURATIONS ${config} )
+				else()
+					# message( STATUS "${target}: Installing no pdb file!" )
 				endif()
 			endforeach()
 		endif()

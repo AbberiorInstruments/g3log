@@ -1,0 +1,13 @@
+
+if( ${CMAKE_FIND_PACKAGE_NAME}_FIND_VERSION )
+	set( find_version ${${CMAKE_FIND_PACKAGE_NAME}_FIND_VERSION} )
+	string( REGEX MATCH "\\[v([^(]*)\\(([^)]*)\\)\\]" cached_version "${FIND_PACKAGE_MESSAGE_DETAILS_${CMAKE_FIND_PACKAGE_NAME}}" )
+	if( NOT cached_version OR NOT find_version STREQUAL CMAKE_MATCH_1 OR NOT find_version STREQUAL CMAKE_MATCH_2 )
+		get_cmake_property( variables CACHE_VARIABLES )
+		foreach( variable ${variables} )
+			if( variable MATCHES "^${CMAKE_FIND_PACKAGE_NAME}_" )
+				unset( ${variable} CACHE )
+			endif()
+		endforeach()
+	endif()
+endif()

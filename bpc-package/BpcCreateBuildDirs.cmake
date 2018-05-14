@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 3.7.1 )
+cmake_minimum_required( VERSION 3.10.2 )
 
 set( MSBUILD_CMD "C:\\Program Files (x86)\\MSBuild\\14.0\\Bin\\MSBuild.exe" )
 FIND_PACKAGE(Subversion QUIET)
@@ -24,7 +24,9 @@ function( bpc_build )
 	set( KNOWN_PLATFORMS_WINDOWS
 		"MSVC-64-14.0"
 		"MSVC-32-14.0"
-		"NISOM"
+		"MSVC-64-14.1"
+		"MSVC-32-14.1"
+		#"NISOM"
 		"nisom-cxx11"
 	)
 	
@@ -245,13 +247,11 @@ function( bpc_create_nisom_build platform config )
 		endif()
 	endforeach()
 	
-
 	if( NOT TOOLCHAIN_FILE )
 		message( FATAL_ERROR "Could not find ${name}.cmake!" )
 	endif()
 	 
 	message( STATUS "Executing cmake. Build dir: ${BUILD_DIR}" )
-
 	if(BPC_NISOM_USE_NINJA AND NOT NO_NINJA )
 		set(NISOM_CMAKE_GENERATOR "Ninja")
 	else()
@@ -263,6 +263,7 @@ function( bpc_create_nisom_build platform config )
 			"-G${NISOM_CMAKE_GENERATOR}" 
 			"-DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE}" 
 			"-DCMAKE_BUILD_TYPE=${config}"
+			"-DBPC_LIBRARIES=${BPC_LIBRARIES}"
 			"${IPREFIX_ARG}"
 	)
 endfunction()
@@ -279,6 +280,7 @@ function( bpc_create_linux_build platform config nobuild target )
 			"${MY_GXX}"
 			"${IPREFIX_ARG}"
 			"-DCMAKE_BUILD_TYPE=${config}"
+			"-DBPC_LIBRARIES=${BPC_LIBRARIES}"
 	)
 	if( NOT nobuild )
 		message( "Executing make in ${BUILD_DIR}/${config}" )
@@ -304,6 +306,7 @@ function( bpc_create_windows_build platform )
 		COMMAND ${CMAKE_COMMAND} "${BUILD_SOURCE_DIR}" "-B${BUILD_DIR}" 
 			"${GENERATOR}" 
 			"-DCMAKE_CONFIGURATION_TYPES=Debug;RelWithDebInfo"
+			"-DBPC_LIBRARIES=${BPC_LIBRARIES}"
 			"${IPREFIX_ARG}"
 	)
 endfunction()
